@@ -29,6 +29,7 @@ async function run() {
         const demoShopDB = client.db("inventoryManagementSystemDB").collection("demoShopDB");
         const imsUsersDB = client.db("inventoryManagementSystemDB").collection("imsUsersDB");
         const shopCollectionsDB = client.db("inventoryManagementSystemDB").collection("shopCollectionsDB");
+        const addProductsDB = client.db("inventoryManagementSystemDB").collection("addProductsDB");
 
         // get data from demoShopDB
         app.get('/demoShopDB', async(req, res) => {
@@ -94,6 +95,20 @@ async function run() {
                 return res.status(400).send("user already has a shop")
             }
 
+        });
+
+        // get data from addProductsDB
+        app.get("/addProductsDB", async (req, res) => {
+            const cursor = addProductsDB.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
+        // post data to addProductsDB
+        app.post("/addProductsDB", async (req, res) => {
+            const usersData = req.body;
+            const result = await addProductsDB.insertOne(usersData);
+            res.send(result);
         });
 
         // Send a ping to confirm a successful connection
