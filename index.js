@@ -58,12 +58,30 @@ async function run() {
                     role: "manager",
                     shopId: shopDetails.shopId,
                     shopName: shopDetails.shopName,
-                    shopLogo: shopDetails.shopLogo
+                    shopLogo: shopDetails.shopLogo,
                 }
             }
             const result = await imsUsersDB.updateOne(filter, updatedDoc)
             res.send(result)
         });
+
+        // patch data from shopCollectionsDB
+        app.patch("/shopCollectionsDB/:shopOwnerEmail", async (req, res) => {
+            const userEmail = req.params.shopOwnerEmail
+
+            const shopDetails = req.body
+            console.log(shopDetails);
+
+            const filter = {email: userEmail}
+            const updatedDoc = {
+                $set: {
+                    productsLimit: shopDetails.productsLimit - 1
+                }
+            }
+            const result = await shopCollectionsDB.updateOne(filter, updatedDoc)
+            res.send(result)
+        });
+
 
         // post imsUsers info
         app.post("/imsUsersDB", async (req, res) => {
@@ -107,8 +125,26 @@ async function run() {
         // post data to addProductsDB
         app.post("/addProductsDB", async (req, res) => {
             const usersData = req.body;
-            const result = await addProductsDB.insertOne(usersData);
+
+            const userShop = await shopCollectionsDB.findOne({shopOwnerEmail: usersData?.userEmail})
+            if(userShop && userShop.productsLimit > 0) {
+                const result = await shopCollectionsDB.updateOne(
+                    {shopOwnerEmail: usersData.userEmail},
+                    {$inc: {productsLimit: -1}}
+                )
+                if(result.modifiedCount === 1) {
+
+                    const result = await addProductsDB.insertOne(usersData);
             res.send(result);
+
+                }
+                else {
+                    res.status(400).send("Failed to update productsLimit."); }
+            }
+            else {
+                res.status(400).send("User has reached the products limit. Please purchase a subscription.");}
+
+            
         });
 
         // Send a ping to confirm a successful connection
