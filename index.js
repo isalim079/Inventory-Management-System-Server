@@ -147,6 +147,62 @@ async function run() {
             
         });
 
+        // getting specific products
+        app.get("/addProductsDB/:id", async(req, res) => {
+            const id = req.params.id
+            const query = {_id: new ObjectId(id)}
+            const productDetails = await addProductsDB.findOne(query)
+            res.send(productDetails)
+        })
+
+        // updating products details
+        app.patch("/addProductsDB/:id", async (req, res) => {
+            const id = req.params.id
+            const productsData = req.body
+            const filter = {_id: new ObjectId(id)}
+            const updatedDoc = {
+                $set: {
+                    productName: productsData.productName,
+                    productImage: productsData.productImage,
+                    productQuantity: productsData.productQuantity,
+                    productLocation: productsData.productLocation,
+                    productionCost: productsData.productionCost,
+                    profitMargin: productsData.profitMargin,
+                    discount: productsData.discount,
+                    productDescription: productsData.productDescription,
+                    sellingPrice: productsData.sellingPrice,
+                }
+            }
+            const result = await addProductsDB.updateOne(filter, updatedDoc)
+            res.send(result)
+
+        })
+
+        // delete user products
+        app.delete("/addProductsDB/:id", async (req, res) => {
+            const id = req.params.id
+
+            const products = await addProductsDB.findOne({_id: new ObjectId(id)})
+
+            const shopOwnerCollections = await shopCollectionsDB.findOne({shopOwnerEmail: products?.userEmail})
+
+            if(shopOwnerCollections){
+                const updatedCollections = await shopCollectionsDB.updateOne(
+                    {shopOwnerEmail: products.userEmail},
+                    {$inc: {productsLimit: +1}}
+                )
+
+                if(updatedCollections.modifiedCount === 1) {
+
+                    const query = {_id: new ObjectId(id)}
+                    const result = await addProductsDB.deleteOne(query)
+                    res.send(result)
+
+                }
+            }
+           
+        })
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log(
