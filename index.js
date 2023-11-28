@@ -30,6 +30,8 @@ async function run() {
         const imsUsersDB = client.db("inventoryManagementSystemDB").collection("imsUsersDB");
         const shopCollectionsDB = client.db("inventoryManagementSystemDB").collection("shopCollectionsDB");
         const addProductsDB = client.db("inventoryManagementSystemDB").collection("addProductsDB");
+        const checkoutProductsDB = client.db("inventoryManagementSystemDB").collection("checkoutProductsDB");
+        const salesCollectionsDB = client.db("inventoryManagementSystemDB").collection("salesCollectionsDB");
 
         // get data from demoShopDB
         app.get('/demoShopDB', async(req, res) => {
@@ -37,6 +39,15 @@ async function run() {
             const result = await cursor.toArray()
             res.send(result)
         })
+
+        // get data from salesCollectionsDB
+        app.get('/salesCollectionsDB', async(req, res) => {
+            const cursor = salesCollectionsDB.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+       
 
         // get data from imsUsersDB
         app.get("/imsUsersDB", async (req, res) => {
@@ -90,12 +101,32 @@ async function run() {
             res.send(result);
         });
 
+        // post imsUsers salesCollectionsDB
+        app.post("/salesCollectionsDB/:productsId", async (req, res) => {
+
+            const productsId = req.params.productsId
+           
+            const usersData = req.body;
+            const result = await salesCollectionsDB.insertOne(usersData);
+            
+
+            const salesResult = await addProductsDB.updateOne(
+                {_id: new ObjectId(productsId)},
+                {$inc: {saleCount: +1, productQuantity: - 1}},
+               
+            )
+
+            res.send({result, salesResult});
+        });
+
         // get shopCollections info
         app.get("/shopCollectionsDB", async (req, res) => {
             const cursor = shopCollectionsDB.find();
             const result = await cursor.toArray();
             res.send(result);
         });
+
+       
 
         // post shopCollections info
         app.post("/shopCollectionsDB", async (req, res) => {
@@ -202,6 +233,31 @@ async function run() {
             }
            
         })
+
+         // delete checkoutProductsDB info
+         app.delete('/checkoutProductsDB/:productsId', async(req, res) => {
+            const productsId= req.params.productsId
+      
+            const query = {productsId: productsId}
+           
+            const result = await checkoutProductsDB.deleteOne(query)
+            res.send(result)
+         })
+
+         // get data from checkoutProductsDB
+         app.get('/checkoutProductsDB', async(req, res) => {
+            const cursor = checkoutProductsDB.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        // post data from checkoutProductsDB
+        app.post("/checkoutProductsDB", async(req, res) => {
+            const userData = req.body
+            const result = await checkoutProductsDB.insertOne(userData)
+            res.send(result)
+        })
+        
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
